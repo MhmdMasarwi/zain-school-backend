@@ -9,31 +9,28 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/zain-school";
 
-// ✅ עדכון CORS
 const corsOptions = {
-  origin: "http://localhost:3000", // אל תשתמש ב-`*`
+  origin: "http://localhost:3000",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true // חובה עבור קריאות עם `include`
+  credentials: true 
 };
 
 app.use(cors(corsOptions));
 
 app.use(express.json());
 
-// ✅ Middleware נוסף לטיפול בהרשאות CORS
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000"); // צריך להיות ספציפי
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  next();
-});
+app.options("*", cors(corsOptions));
 
-// ✅ חיבור ל-MongoDB
 mongoose.connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+app.use((req, res, next) => {
+  console.log(`📌 בקשה נכנסת: ${req.method} ${req.url}`);
+  if (Object.keys(req.body).length) console.log("📌 גוף הבקשה:", req.body);
+  next();
+});
 
 app.use("/api/auth", authRoutes);
 
