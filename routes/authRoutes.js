@@ -6,14 +6,22 @@ const authenticateToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// ✅ פונקציה לווידוא נתוני משתמש
-const validateUserInput = (username, password) => {
+const validateUserInput = (user) => {
   const usernameRegex = /^[A-Za-z]+$/;
-  const passwordRegex = /^[0-9]{9}$/;
+  const nameRegex = /^[\u0600-\u06FF\sA-Za-z]{2,}$/;
+  const passwordRegex = /^\d{9}$/;
 
-  if (!usernameRegex.test(username)) return "שם המשתמש חייב להכיל רק אותיות באנגלית.";
-  if (!passwordRegex.test(password)) return "הסיסמה חייבת להכיל בדיוק 9 ספרות.";
-  return null;
+  let errors = {};
+
+  if (!nameRegex.test(user.firstName)) errors.firstName = "השם הפרטי חייב להכיל לפחות 2 אותיות.";
+  if (!nameRegex.test(user.lastName)) errors.lastName = "שם המשפחה חייב להכיל לפחות 2 אותיות.";
+  if (!nameRegex.test(user.fatherName)) errors.fatherName = "שם האב חייב להכיל לפחות 2 אותיות.";
+  if (!usernameRegex.test(user.username)) errors.username = "שם המשתמש חייב להיות באותיות באנגלית בלבד.";
+  if (!passwordRegex.test(user.password)) errors.password = "הסיסמה חייבת להכיל בדיוק 9 ספרות.";
+  if (!user.gradeLevel) errors.gradeLevel = "יש לבחור כיתה.";
+  if (!user.className) errors.className = "יש לבחור שם כיתה.";
+
+  return Object.keys(errors).length === 0 ? null : errors;
 };
 
 // ✅ הרשמה
@@ -21,16 +29,18 @@ router.post("/register", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
 
-  const { username, password } = req.body;
-  const validationError = validateUserInput(username, password);
-  if (validationError) return res.status(400).json({ message: validationError });
+  const { firstName, lastName, fatherName, username, password, gradeLevel, className } = req.body;
+
+  const validationErrors = validateUserInput({ firstName, lastName, fatherName, username, password, gradeLevel, className });
+  if (validationErrors) return res.status(400).json({ message: "שגיאה בהרשמה.", errors: validationErrors });
 
   try {
     const existingUser = await User.findOne({ username });
     if (existingUser) return res.status(400).json({ message: "שם המשתמש כבר תפוס." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword });
+    const newUser = new User({ firstName, lastName, fatherName, username, password: hashedPassword, gradeLevel, className });
+
     await newUser.save();
     
     res.status(201).json({ message: "המשתמש נרשם בהצלחה." });
@@ -39,14 +49,16 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "שגיאה בהרשמה.", error: err.message });
   }
 });
-// ✅ התחברות
+
 router.post("/login", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
 
   const { username, password } = req.body;
-  const validationError = validateUserInput(username, password);
-  if (validationError) return res.status(400).json({ message: validationError });
+  
+  if (!username || !password) {
+    return res.status(400).json({ message: "חובה להזין שם משתמש וסיסמה." });
+  }
 
   try {
     const user = await User.findOne({ username });
@@ -68,15 +80,19 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ✅ גישה לפרופיל - מאובטח עם JWT
 router.get("/profile", authenticateToken, async (req, res) => {
   try {
+    console.log("📌 קבלת פרופיל למשתמש עם ID:", req.user.id);
     const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "המשתמש לא נמצא." });
+    }
     res.json(user);
   } catch (err) {
     console.error("❌ שגיאה בטעינת הפרופיל:", err);
     res.status(500).json({ message: "שגיאה בטעינת הפרופיל." });
   }
 });
+
 
 module.exports = router;
