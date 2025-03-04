@@ -26,7 +26,7 @@ const validateUserInput = (user) => {
 
 // ✅ הרשמה
 router.post("/register", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  // res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
 
   const { firstName, lastName, fatherName, username, password, gradeLevel, className } = req.body;
@@ -51,7 +51,7 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  // res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
 
   const { username, password } = req.body;

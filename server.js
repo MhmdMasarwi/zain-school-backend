@@ -11,16 +11,15 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/zain-schoo
 
 const corsOptions = {
   origin: "http://localhost:3000",
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true 
 };
 
 app.use(cors(corsOptions));
-
 app.use(express.json());
 
-app.options("*", cors(corsOptions));
+// app.options("*", cors(corsOptions));
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
@@ -39,6 +38,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "שגיאה בשרת", error: err.message });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
