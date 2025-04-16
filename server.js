@@ -107,3 +107,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 الخادم يعمل على المنفذ ${PORT}`);
 });
+const tasksRoutes = require('./routes/tasks');
+app.use('/api/tasks', tasksRoutes);
